@@ -87,18 +87,16 @@ const Audio = {
     osc.stop(t + duration + 0.05);
   },
 
-  speak(text) {
-    if (!('speechSynthesis' in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.1;
-    u.volume = 1.0;
-    speechSynthesis.speak(u);
+  playSound(src) {
+    const a = new window.Audio(src);
+    a.volume = 1.0;
+    a.play().catch(() => {});
   },
 
   countdown()  { this.beep(660, 0.15, 0, 0.5); },
-  workStart()  { this.beep(880, 0.15, 0, 0.6); this.beep(880, 0.15, 0.2, 0.6); this.beep(1100, 0.3, 0.4, 0.7); setTimeout(() => this.speak('Work'), 800); },
-  restStart()  { this.beep(440, 0.5, 0, 0.5); setTimeout(() => this.speak('Rest'), 600); },
-  complete()   { this.beep(880, 0.2, 0, 0.5); this.beep(1100, 0.2, 0.25, 0.5); this.beep(1320, 0.2, 0.5, 0.5); this.beep(1760, 0.5, 0.75, 0.7); setTimeout(() => this.speak('Workout Done'), 1400); }
+  workStart()  { this.beep(880, 0.15, 0, 0.6); this.beep(880, 0.15, 0.2, 0.6); this.beep(1100, 0.3, 0.4, 0.7); setTimeout(() => this.playSound('sounds/work.mp3'), 800); },
+  restStart()  { this.beep(440, 0.5, 0, 0.5); setTimeout(() => this.playSound('sounds/Rest.mp3'), 600); },
+  complete()   { this.beep(880, 0.2, 0, 0.5); this.beep(1100, 0.2, 0.25, 0.5); this.beep(1320, 0.2, 0.5, 0.5); this.beep(1760, 0.5, 0.75, 0.7); setTimeout(() => this.playSound('sounds/AllDone.mp3'), 1400); }
 };
 
 

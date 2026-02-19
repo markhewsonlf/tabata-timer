@@ -1,10 +1,13 @@
-const CACHE_NAME = 'tabata-v1';
+const CACHE_NAME = 'tabata-v2';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
-  './manifest.json'
+  './manifest.json',
+  './sounds/work.mp3',
+  './sounds/Rest.mp3',
+  './sounds/AllDone.mp3'
 ];
 
 self.addEventListener('install', (e) => {
