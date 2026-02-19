@@ -5,6 +5,7 @@ const Audio = {
   ctx: null,
   silentEl: null,
   initialized: false,
+  sounds: {},  // pre-decoded AudioBuffers for MP3 files
 
   init() {
     if (this.initialized) return;
@@ -21,6 +22,11 @@ const Audio = {
     // Create silent audio element for background keepalive
     this._createSilentAudio();
 
+    // Pre-load and decode MP3 files into Web Audio API buffers
+    this._loadSound('work', 'sounds/work.mp3');
+    this._loadSound('rest', 'sounds/Rest.mp3');
+    this._loadSound('done', 'sounds/AllDone.mp3');
+
     // Re-resume on state change (e.g. after phone call interruption)
     this.ctx.addEventListener('statechange', () => {
       if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
@@ -29,6 +35,14 @@ const Audio = {
     });
 
     this.initialized = true;
+  },
+
+  _loadSound(name, url) {
+    fetch(url)
+      .then(r => r.arrayBuffer())
+      .then(buf => this.ctx.decodeAudioData(buf))
+      .then(decoded => { this.sounds[name] = decoded; })
+      .catch(() => {});
   },
 
   _createSilentAudio() {
@@ -87,16 +101,21 @@ const Audio = {
     osc.stop(t + duration + 0.05);
   },
 
-  playSound(src) {
-    const a = new window.Audio(src);
-    a.volume = 1.0;
-    a.play().catch(() => {});
+  playSound(name) {
+    if (!this.ctx || !this.sounds[name]) return;
+    const src = this.ctx.createBufferSource();
+    const gain = this.ctx.createGain();
+    src.buffer = this.sounds[name];
+    src.connect(gain);
+    gain.connect(this.ctx.destination);
+    gain.gain.value = 1.0;
+    src.start(this.ctx.currentTime);
   },
 
   countdown()  { this.beep(660, 0.15, 0, 0.5); },
-  workStart()  { this.beep(880, 0.15, 0, 0.6); this.beep(880, 0.15, 0.2, 0.6); this.beep(1100, 0.3, 0.4, 0.7); setTimeout(() => this.playSound('sounds/work.mp3'), 800); },
-  restStart()  { this.beep(440, 0.5, 0, 0.5); setTimeout(() => this.playSound('sounds/Rest.mp3'), 600); },
-  complete()   { this.beep(880, 0.2, 0, 0.5); this.beep(1100, 0.2, 0.25, 0.5); this.beep(1320, 0.2, 0.5, 0.5); this.beep(1760, 0.5, 0.75, 0.7); setTimeout(() => this.playSound('sounds/AllDone.mp3'), 1400); }
+  workStart()  { this.beep(880, 0.15, 0, 0.6); this.beep(880, 0.15, 0.2, 0.6); this.beep(1100, 0.3, 0.4, 0.7); setTimeout(() => this.playSound('work'), 800); },
+  restStart()  { this.beep(440, 0.5, 0, 0.5); setTimeout(() => this.playSound('rest'), 600); },
+  complete()   { this.beep(880, 0.2, 0, 0.5); this.beep(1100, 0.2, 0.25, 0.5); this.beep(1320, 0.2, 0.5, 0.5); this.beep(1760, 0.5, 0.75, 0.7); setTimeout(() => this.playSound('done'), 1400); }
 };
 
 
