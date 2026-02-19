@@ -1,0 +1,429 @@
+:root {
+  --bg: #0f0f1a;
+  --card: #1a1a2e;
+  --card-border: #2a2a4a;
+  --text: #e8e8e8;
+  --text-dim: #777;
+  --accent: #00e676;
+  --work: #00e676;
+  --rest: #448aff;
+  --prepare: #ffab00;
+  --complete: #ff6d00;
+  --danger: #ff5252;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ===== Views ===== */
+.view {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.view.active {
+  display: flex;
+}
+
+/* ===== Setup View ===== */
+header {
+  margin-top: 10px;
+  margin-bottom: 8px;
+}
+
+header h1 {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  color: var(--accent);
+  text-align: center;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+  margin: 16px 0;
+}
+
+.config-item {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 14px 8px;
+  text-align: center;
+}
+
+.config-item label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 10px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.step-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--card-border);
+  background: transparent;
+  color: var(--text);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.step-btn:active {
+  background: var(--card-border);
+}
+
+.step-value {
+  font-size: 26px;
+  font-weight: 700;
+  min-width: 52px;
+  text-align: center;
+}
+
+.total-time {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.total-time span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.primary-btn {
+  width: 100%;
+  max-width: 360px;
+  padding: 18px;
+  border: none;
+  border-radius: 16px;
+  background: var(--accent);
+  color: #0f0f1a;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+
+.primary-btn:active {
+  opacity: 0.8;
+}
+
+/* Presets */
+.presets-section {
+  width: 100%;
+  max-width: 360px;
+  margin-top: 24px;
+}
+
+.presets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.presets-header h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 4px 8px;
+}
+
+.presets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preset-item {
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.preset-info {
+  flex: 1;
+  padding: 12px 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preset-info:active {
+  background: var(--card-border);
+}
+
+.preset-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.preset-detail {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.preset-delete {
+  background: none;
+  border: none;
+  border-left: 1px solid var(--card-border);
+  color: var(--text-dim);
+  font-size: 16px;
+  padding: 12px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.preset-delete:active {
+  background: rgba(255, 82, 82, 0.2);
+  color: var(--danger);
+}
+
+/* ===== Timer View ===== */
+#timer-view {
+  justify-content: center;
+  gap: 4px;
+  transition: background 0.4s ease;
+}
+
+.phase-prepare { background: linear-gradient(180deg, rgba(255, 171, 0, 0.12) 0%, var(--bg) 60%); }
+.phase-work { background: linear-gradient(180deg, rgba(0, 230, 118, 0.12) 0%, var(--bg) 60%); }
+.phase-rest { background: linear-gradient(180deg, rgba(68, 138, 255, 0.12) 0%, var(--bg) 60%); }
+.phase-complete { background: linear-gradient(180deg, rgba(255, 109, 0, 0.15) 0%, var(--bg) 60%); }
+
+.timer-phase {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  transition: color 0.3s;
+}
+
+.phase-prepare .timer-phase { color: var(--prepare); }
+.phase-work .timer-phase { color: var(--work); }
+.phase-rest .timer-phase { color: var(--rest); }
+.phase-complete .timer-phase { color: var(--complete); }
+
+.timer-display {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.timer-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.timer-ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 6;
+}
+
+.timer-ring-progress {
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 565.49;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.3s linear, stroke 0.4s ease;
+}
+
+.phase-prepare .timer-ring-progress { stroke: var(--prepare); }
+.phase-work .timer-ring-progress { stroke: var(--work); }
+.phase-rest .timer-ring-progress { stroke: var(--rest); }
+.phase-complete .timer-ring-progress { stroke: var(--complete); }
+
+.timer-inner {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.timer-countdown {
+  font-size: 96px;
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.rounds-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 300px;
+  min-height: 14px;
+}
+
+.round-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 0.3s;
+}
+
+.round-dot.done {
+  background: var(--accent);
+}
+
+.round-dot.active {
+  animation: dot-pulse 1s ease-in-out infinite;
+}
+
+.phase-work .round-dot.active { background: var(--work); }
+.phase-rest .round-dot.active { background: var(--rest); }
+.phase-prepare .round-dot.active { background: var(--prepare); }
+
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.4); opacity: 1; }
+}
+
+.timer-round {
+  font-size: 15px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.progress-container {
+  width: 100%;
+  max-width: 300px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s linear;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.control-btn {
+  flex: 1;
+  padding: 16px;
+  border: 2px solid var(--card-border);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.control-btn:active {
+  background: var(--card-border);
+}
+
+.control-btn.stop {
+  border-color: rgba(255, 82, 82, 0.3);
+  color: var(--danger);
+}
+
+.control-btn.stop:active {
+  background: rgba(255, 82, 82, 0.15);
+}
+
+.paused .timer-countdown {
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}

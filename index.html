@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tabata">
+  <meta name="theme-color" content="#0f0f1a">
+  <title>Tabata Timer</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Setup View -->
+    <div id="setup-view" class="view active">
+      <header>
+        <h1>TABATA</h1>
+      </header>
+
+      <div class="config-grid">
+        <div class="config-item work">
+          <label>WORK</label>
+          <div class="stepper">
+            <button class="step-btn" data-target="work" data-delta="-5" aria-label="Decrease work time">&minus;</button>
+            <span id="work-display" class="step-value">20s</span>
+            <button class="step-btn" data-target="work" data-delta="5" aria-label="Increase work time">+</button>
+          </div>
+        </div>
+        <div class="config-item rest">
+          <label>REST</label>
+          <div class="stepper">
+            <button class="step-btn" data-target="rest" data-delta="-5" aria-label="Decrease rest time">&minus;</button>
+            <span id="rest-display" class="step-value">10s</span>
+            <button class="step-btn" data-target="rest" data-delta="5" aria-label="Increase rest time">+</button>
+          </div>
+        </div>
+        <div class="config-item rounds">
+          <label>ROUNDS</label>
+          <div class="stepper">
+            <button class="step-btn" data-target="rounds" data-delta="-1" aria-label="Decrease rounds">&minus;</button>
+            <span id="rounds-display" class="step-value">8</span>
+            <button class="step-btn" data-target="rounds" data-delta="1" aria-label="Increase rounds">+</button>
+          </div>
+        </div>
+        <div class="config-item prepare">
+          <label>PREPARE</label>
+          <div class="stepper">
+            <button class="step-btn" data-target="prepare" data-delta="-5" aria-label="Decrease prepare time">&minus;</button>
+            <span id="prepare-display" class="step-value">10s</span>
+            <button class="step-btn" data-target="prepare" data-delta="5" aria-label="Increase prepare time">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="total-time">Total: <span id="total-time">4:00</span></div>
+
+      <button id="start-btn" class="primary-btn">START</button>
+
+      <div class="presets-section">
+        <div class="presets-header">
+          <h2>Presets</h2>
+          <button id="save-preset-btn" class="text-btn">+ Save Current</button>
+        </div>
+        <div id="presets-list" class="presets-list"></div>
+      </div>
+    </div>
+
+    <!-- Timer View -->
+    <div id="timer-view" class="view">
+      <div id="timer-phase" class="timer-phase">PREPARE</div>
+
+      <div class="timer-display">
+        <svg class="timer-ring" viewBox="0 0 200 200">
+          <circle class="timer-ring-bg" cx="100" cy="100" r="90" />
+          <circle id="timer-ring-progress" class="timer-ring-progress" cx="100" cy="100" r="90" />
+        </svg>
+        <div class="timer-inner">
+          <div id="timer-countdown" class="timer-countdown">10</div>
+        </div>
+      </div>
+
+      <div id="timer-rounds-dots" class="rounds-dots"></div>
+      <div id="timer-round" class="timer-round">Get ready!</div>
+
+      <div class="progress-container">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+
+      <div class="timer-controls">
+        <button id="pause-btn" class="control-btn pause">PAUSE</button>
+        <button id="stop-btn" class="control-btn stop">STOP</button>
+      </div>
+    </div>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

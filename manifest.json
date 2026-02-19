@@ -1,0 +1,11 @@
+{
+  "name": "Tabata Timer",
+  "short_name": "Tabata",
+  "description": "Offline interval timer for Tabata workouts",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0f1a",
+  "theme_color": "#0f0f1a",
+  "icons": []
+}
