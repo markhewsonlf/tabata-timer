@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tabata-v3';
+const CACHE_NAME = 'tabata-v4';
 const ASSETS = [
   './',
   './index.html',

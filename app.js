@@ -40,9 +40,14 @@ const Audio = {
   _loadSound(name, url) {
     fetch(url)
       .then(r => r.arrayBuffer())
-      .then(buf => this.ctx.decodeAudioData(buf))
-      .then(decoded => { this.sounds[name] = decoded; })
-      .catch(() => {});
+      .then(buf => {
+        // Use callback API (iOS Safari doesn't always support the Promise version)
+        this.ctx.decodeAudioData(buf,
+          (decoded) => { this.sounds[name] = decoded; },
+          (err) => { console.error('decode failed:', name, err); }
+        );
+      })
+      .catch(err => { console.error('fetch failed:', name, err); });
   },
 
   _createSilentAudio() {
@@ -101,7 +106,7 @@ const Audio = {
     osc.stop(t + duration + 0.05);
   },
 
-  playSound(name) {
+  playSound(name, delay) {
     if (!this.ctx || !this.sounds[name]) return;
     const src = this.ctx.createBufferSource();
     const gain = this.ctx.createGain();
@@ -109,13 +114,13 @@ const Audio = {
     src.connect(gain);
     gain.connect(this.ctx.destination);
     gain.gain.value = 1.0;
-    src.start(this.ctx.currentTime);
+    src.start(this.ctx.currentTime + (delay || 0));
   },
 
   countdown()  { this.beep(660, 0.15, 0, 0.5); },
-  workStart()  { this.beep(880, 0.15, 0, 0.6); this.beep(880, 0.15, 0.2, 0.6); this.beep(1100, 0.3, 0.4, 0.7); setTimeout(() => this.playSound('work'), 800); },
-  restStart()  { this.beep(440, 0.5, 0, 0.5); setTimeout(() => this.playSound('rest'), 600); },
-  complete()   { this.beep(880, 0.2, 0, 0.5); this.beep(1100, 0.2, 0.25, 0.5); this.beep(1320, 0.2, 0.5, 0.5); this.beep(1760, 0.5, 0.75, 0.7); setTimeout(() => this.playSound('done'), 1400); }
+  workStart()  { this.beep(880, 0.15, 0, 0.6); this.beep(880, 0.15, 0.2, 0.6); this.beep(1100, 0.3, 0.4, 0.7); this.playSound('work', 0.8); },
+  restStart()  { this.beep(440, 0.5, 0, 0.5); this.playSound('rest', 0.6); },
+  complete()   { this.beep(880, 0.2, 0, 0.5); this.beep(1100, 0.2, 0.25, 0.5); this.beep(1320, 0.2, 0.5, 0.5); this.beep(1760, 0.5, 0.75, 0.7); this.playSound('done', 1.4); }
 };
 
 
