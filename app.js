@@ -1,11 +1,11 @@
 // ============================================================
-// Audio System - Web Audio API with silent keepalive for iOS
+// Audio System - Web Audio API (mixes with background music)
 // ============================================================
 const Audio = {
   ctx: null,
-  silentEl: null,
   initialized: false,
   sounds: {},  // pre-decoded AudioBuffers for MP3 files
+  keepAliveId: null,
 
   init() {
     if (this.initialized) return;
@@ -19,20 +19,10 @@ const Audio = {
     src.connect(this.ctx.destination);
     src.start(0);
 
-    // Create silent audio element for background keepalive
-    this._createSilentAudio();
-
     // Pre-load and decode MP3 files into Web Audio API buffers
     this._loadSound('work', 'sounds/work.mp3');
     this._loadSound('rest', 'sounds/Rest.mp3');
     this._loadSound('done', 'sounds/AllDone.mp3');
-
-    // Re-resume on state change (e.g. after phone call interruption)
-    this.ctx.addEventListener('statechange', () => {
-      if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
-        this.ctx.resume();
-      }
-    });
 
     this.initialized = true;
   },
@@ -50,47 +40,40 @@ const Audio = {
       .catch(err => { console.error('fetch failed:', name, err); });
   },
 
-  _createSilentAudio() {
-    const rate = 8000;
-    const samples = rate; // 1 second
-    const buf = new ArrayBuffer(44 + samples);
-    const v = new DataView(buf);
-    const w = (off, s) => { for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); };
-
-    w(0, 'RIFF');
-    v.setUint32(4, 36 + samples, true);
-    w(8, 'WAVE');
-    w(12, 'fmt ');
-    v.setUint32(16, 16, true);
-    v.setUint16(20, 1, true);   // PCM
-    v.setUint16(22, 1, true);   // mono
-    v.setUint32(24, rate, true);
-    v.setUint32(28, rate, true);
-    v.setUint16(32, 1, true);   // block align
-    v.setUint16(34, 8, true);   // 8-bit
-    w(36, 'data');
-    v.setUint32(40, samples, true);
-    for (let i = 0; i < samples; i++) v.setUint8(44 + i, 128); // silence
-
-    const blob = new Blob([buf], { type: 'audio/wav' });
-    this.silentEl = document.createElement('audio');
-    this.silentEl.src = URL.createObjectURL(blob);
-    this.silentEl.loop = true;
-    this.silentEl.volume = 0.01;
-  },
-
+  // Keep the Web Audio context alive while the phone is locked by scheduling
+  // tiny silent buffers periodically. Unlike an HTML <audio> element, Web Audio
+  // API buffers mix with background music instead of stealing the audio session.
   startKeepAlive() {
-    if (this.silentEl) this.silentEl.play().catch(() => {});
-    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    this._ensureCtx();
+    if (this.keepAliveId) return;
+    this.keepAliveId = setInterval(() => {
+      if (!this.ctx) return;
+      this._ensureCtx();
+      const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(this.ctx.destination);
+      src.start(0);
+    }, 5000);
   },
 
   stopKeepAlive() {
-    if (this.silentEl) this.silentEl.pause();
+    if (this.keepAliveId) {
+      clearInterval(this.keepAliveId);
+      this.keepAliveId = null;
+    }
+  },
+
+  _ensureCtx() {
+    if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
+      this.ctx.resume();
+    }
   },
 
   // Core beep using Web Audio API scheduling (precise, works when throttled)
   beep(freq, duration, delay, volume) {
     if (!this.ctx) return;
+    this._ensureCtx();
     delay = delay || 0;
     volume = volume || 0.5;
     const t = this.ctx.currentTime + delay;
@@ -108,6 +91,7 @@ const Audio = {
 
   playSound(name, delay) {
     if (!this.ctx || !this.sounds[name]) return;
+    this._ensureCtx();
     const src = this.ctx.createBufferSource();
     const gain = this.ctx.createGain();
     src.buffer = this.sounds[name];
@@ -264,7 +248,7 @@ const Timer = {
     this.intervalId = null;
     this.state = 'complete';
     Audio.complete();
-    // Keep audio session alive briefly for the completion sound
+    // Keep audio alive briefly for the completion sound, then release
     setTimeout(() => Audio.stopKeepAlive(), 3000);
     App.onComplete();
   }
