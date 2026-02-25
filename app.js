@@ -9,6 +9,13 @@ const Audio = {
 
   init() {
     if (this.initialized) return;
+
+    // Tell iOS to mix our audio with background music (e.g. Spotify, Apple Music)
+    // instead of pausing it. Supported in Safari 16.4+ / iOS 16.4+.
+    if ('audioSession' in navigator) {
+      navigator.audioSession.type = 'ambient';
+    }
+
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     this.ctx.resume();
 
