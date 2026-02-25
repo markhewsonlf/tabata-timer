@@ -1,17 +1,19 @@
 // ============================================================
-// Audio System - Web Audio API (mixes with background music)
+// Audio System - Web Audio API
+// Strategy: suspend AudioContext between sounds so iOS releases
+// the audio session and background music can resume. Resume
+// briefly when we need to play beeps/announcements.
 // ============================================================
 const Audio = {
   ctx: null,
   initialized: false,
-  sounds: {},  // pre-decoded AudioBuffers for MP3 files
-  keepAliveId: null,
+  sounds: {},          // pre-decoded AudioBuffers for MP3 files
+  suspendTimer: null,  // pending suspend timeout
 
   init() {
     if (this.initialized) return;
 
-    // Tell iOS to mix our audio with background music (e.g. Spotify, Apple Music)
-    // instead of pausing it. Supported in Safari 16.4+ / iOS 16.4+.
+    // Hint to iOS Safari 16.4+ that we want to mix, not replace
     if ('audioSession' in navigator) {
       navigator.audioSession.type = 'ambient';
     }
@@ -19,7 +21,7 @@ const Audio = {
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     this.ctx.resume();
 
-    // Play a silent buffer to unlock audio on iOS
+    // Play a silent buffer to unlock audio on iOS (requires user gesture)
     const buf = this.ctx.createBuffer(1, 1, 22050);
     const src = this.ctx.createBufferSource();
     src.buffer = buf;
@@ -31,14 +33,24 @@ const Audio = {
     this._loadSound('rest', 'sounds/Rest.mp3');
     this._loadSound('done', 'sounds/AllDone.mp3');
 
+    // Handle iOS interruptions (e.g. phone call, lock screen)
+    this.ctx.addEventListener('statechange', () => {
+      if (this.ctx.state === 'interrupted') {
+        // iOS interrupted us; we'll resume in _wakeCtx() before next sound
+      }
+    });
+
     this.initialized = true;
+
+    // Immediately suspend so we don't hold the audio session from the start.
+    // Sounds are pre-loaded, context is unlocked — we'll resume on demand.
+    setTimeout(() => this.ctx.suspend(), 300);
   },
 
   _loadSound(name, url) {
     fetch(url)
       .then(r => r.arrayBuffer())
       .then(buf => {
-        // Use callback API (iOS Safari doesn't always support the Promise version)
         this.ctx.decodeAudioData(buf,
           (decoded) => { this.sounds[name] = decoded; },
           (err) => { console.error('decode failed:', name, err); }
@@ -47,40 +59,32 @@ const Audio = {
       .catch(err => { console.error('fetch failed:', name, err); });
   },
 
-  // Keep the Web Audio context alive while the phone is locked by scheduling
-  // tiny silent buffers periodically. Unlike an HTML <audio> element, Web Audio
-  // API buffers mix with background music instead of stealing the audio session.
-  startKeepAlive() {
-    this._ensureCtx();
-    if (this.keepAliveId) return;
-    this.keepAliveId = setInterval(() => {
-      if (!this.ctx) return;
-      this._ensureCtx();
-      const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
-      const src = this.ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(this.ctx.destination);
-      src.start(0);
-    }, 5000);
-  },
-
-  stopKeepAlive() {
-    if (this.keepAliveId) {
-      clearInterval(this.keepAliveId);
-      this.keepAliveId = null;
+  // Resume context before playing, cancel any pending suspend
+  _wakeCtx() {
+    if (this.suspendTimer) {
+      clearTimeout(this.suspendTimer);
+      this.suspendTimer = null;
     }
-  },
-
-  _ensureCtx() {
-    if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
+    if (this.ctx && this.ctx.state !== 'running') {
       this.ctx.resume();
     }
   },
 
-  // Core beep using Web Audio API scheduling (precise, works when throttled)
+  // Schedule a suspend after sounds have finished playing.
+  // This releases the audio session so background music can resume.
+  _sleepAfter(ms) {
+    if (this.suspendTimer) clearTimeout(this.suspendTimer);
+    this.suspendTimer = setTimeout(() => {
+      if (this.ctx && this.ctx.state === 'running') {
+        this.ctx.suspend();
+      }
+      this.suspendTimer = null;
+    }, ms);
+  },
+
+  // Core beep using Web Audio API scheduling
   beep(freq, duration, delay, volume) {
     if (!this.ctx) return;
-    this._ensureCtx();
     delay = delay || 0;
     volume = volume || 0.5;
     const t = this.ctx.currentTime + delay;
@@ -98,7 +102,6 @@ const Audio = {
 
   playSound(name, delay) {
     if (!this.ctx || !this.sounds[name]) return;
-    this._ensureCtx();
     const src = this.ctx.createBufferSource();
     const gain = this.ctx.createGain();
     src.buffer = this.sounds[name];
@@ -108,10 +111,35 @@ const Audio = {
     src.start(this.ctx.currentTime + (delay || 0));
   },
 
-  countdown()  { this.beep(660, 0.15, 0, 0.5); },
-  workStart()  { this.beep(880, 0.15, 0, 0.6); this.beep(880, 0.15, 0.2, 0.6); this.beep(1100, 0.3, 0.4, 0.7); this.playSound('work', 0.8); },
-  restStart()  { this.beep(440, 0.5, 0, 0.5); this.playSound('rest', 0.6); },
-  complete()   { this.beep(880, 0.2, 0, 0.5); this.beep(1100, 0.2, 0.25, 0.5); this.beep(1320, 0.2, 0.5, 0.5); this.beep(1760, 0.5, 0.75, 0.7); this.playSound('done', 1.4); }
+  // Each sound method: wake → play → schedule suspend after sounds finish
+  countdown() {
+    this._wakeCtx();
+    this.beep(660, 0.15, 0, 0.5);
+    this._sleepAfter(500);
+  },
+  workStart() {
+    this._wakeCtx();
+    this.beep(880, 0.15, 0, 0.6);
+    this.beep(880, 0.15, 0.2, 0.6);
+    this.beep(1100, 0.3, 0.4, 0.7);
+    this.playSound('work', 0.8);
+    this._sleepAfter(3000);   // beeps + voice clip ~3s
+  },
+  restStart() {
+    this._wakeCtx();
+    this.beep(440, 0.5, 0, 0.5);
+    this.playSound('rest', 0.6);
+    this._sleepAfter(3000);
+  },
+  complete() {
+    this._wakeCtx();
+    this.beep(880, 0.2, 0, 0.5);
+    this.beep(1100, 0.2, 0.25, 0.5);
+    this.beep(1320, 0.2, 0.5, 0.5);
+    this.beep(1760, 0.5, 0.75, 0.7);
+    this.playSound('done', 1.4);
+    this._sleepAfter(5000);
+  }
 };
 
 
@@ -156,7 +184,6 @@ const Timer = {
 
   start() {
     Audio.init();
-    Audio.startKeepAlive();
     this.currentRound = 0;
     this.lastSecond = -1;
 
@@ -246,7 +273,6 @@ const Timer = {
     this.state = 'idle';
     this.currentRound = 0;
     this.secondsLeft = 0;
-    Audio.stopKeepAlive();
     App.onStop();
   },
 
@@ -255,8 +281,6 @@ const Timer = {
     this.intervalId = null;
     this.state = 'complete';
     Audio.complete();
-    // Keep audio alive briefly for the completion sound, then release
-    setTimeout(() => Audio.stopKeepAlive(), 3000);
     App.onComplete();
   }
 };
